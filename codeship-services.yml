@@ -3,3 +3,4 @@ services:
   dashen:
     build: .
     cached: true
+    env_file_encrypted: codecov.env.encrypted

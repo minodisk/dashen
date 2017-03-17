@@ -1,3 +1,6 @@
 - name: test
   service: dashen
-  command: go test -v -race ./...
+  command: sh test.sh
+- name: codecov
+  service: dashen
+  command: sh codecov.sh
