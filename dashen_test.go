@@ -78,3 +78,98 @@ func TestClose(t *testing.T) {
 		}
 	})
 }
+
+func cb1() {}
+func cb2() {}
+
+func TestSubscribe(t *testing.T) {
+	mac1 := "11:11:11:11:11:11"
+	mac2 := "22:22:22:22:22:22"
+	d := dashen.New()
+
+	t.Run("can subscribe unique func", func(t *testing.T) {
+		d.Subscribe(mac1, cb1)
+		cbs, ok := d.MACCallbacksMap[mac1]
+		if !ok {
+			t.Errorf("not registered MAC: %s", mac1)
+		}
+
+		got := len(cbs)
+		want := 1
+		if got != want {
+			t.Errorf("number of callbacks: got %d, want %d", got, want)
+		}
+	})
+
+	t.Run("not subscribe same func", func(t *testing.T) {
+		d.Subscribe(mac1, cb1)
+		cbs, ok := d.MACCallbacksMap[mac1]
+		if !ok {
+			t.Errorf("not registered MAC: %s", mac1)
+		}
+
+		got := len(cbs)
+		want := 1
+		if got != want {
+			t.Errorf("number of callbacks: got %d, want %d", got, want)
+		}
+	})
+
+	t.Run("can subscribe different func", func(t *testing.T) {
+		d.Subscribe(mac1, cb2)
+		cbs, ok := d.MACCallbacksMap[mac1]
+		if !ok {
+			t.Errorf("not registered MAC: %s", mac1)
+		}
+
+		got := len(cbs)
+		want := 2
+		if got != want {
+			t.Errorf("number of callbacks: got %d, want %d", got, want)
+		}
+	})
+
+	t.Run("can subscribe different MAC", func(t *testing.T) {
+		d.Subscribe(mac2, cb1)
+		d.Subscribe(mac2, cb2)
+		cbs, ok := d.MACCallbacksMap[mac2]
+		if !ok {
+			t.Errorf("not registered MAC: %s", mac2)
+		}
+
+		got := len(cbs)
+		want := 2
+		if got != want {
+			t.Errorf("number of callbacks: got %d, want %d", got, want)
+		}
+	})
+}
+
+func TestUnsubscribe(t *testing.T) {
+	mac1 := "11:11:11:11:11:11"
+	mac2 := "22:22:22:22:22:22"
+	d := dashen.New()
+
+	d.Subscribe(mac1, cb1)
+	d.Subscribe(mac1, cb2)
+	d.Subscribe(mac2, cb1)
+	d.Subscribe(mac2, cb2)
+
+	t.Run("can't unsubscribe unknown MAC", func(t *testing.T) {
+		d.Unsubscribe("33:33:33:33:33:33", cb1)
+		got := len(d.MACCallbacksMap[mac1])
+		want := 2
+		if got != want {
+			t.Errorf("number of callbacks: got %d, want %d", got, want)
+		}
+	})
+
+	t.Run("can unsubscribe", func(t *testing.T) {
+		d.Unsubscribe(mac1, cb1)
+		got := len(d.MACCallbacksMap[mac1])
+		want := 1
+		if got != want {
+			t.Errorf("number of callbacks: got %d, want %d", got, want)
+		}
+	})
+}

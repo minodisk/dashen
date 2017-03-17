@@ -1,6 +1,7 @@
 package dashen
 
 import (
+	"reflect"
 	"sync"
 
 	"github.com/google/gopacket"
@@ -128,33 +129,35 @@ func (d *Dashen) Close() error {
 	return nil
 }
 
-func (d *Dashen) Subscribe(mac string, cb Callback) {
-	cs, ok := d.MACCallbacksMap[mac]
+func (d *Dashen) Subscribe(mac string, callback Callback) {
+	cbs, ok := d.MACCallbacksMap[mac]
 	if !ok {
-		d.MACCallbacksMap[mac] = []Callback{cb}
+		d.MACCallbacksMap[mac] = []Callback{callback}
 		return
 	}
-	for _, c := range cs {
-		if &c == &cb {
+	ptr := reflect.ValueOf(callback).Pointer()
+	for _, cb := range cbs {
+		if reflect.ValueOf(cb).Pointer() == ptr {
 			return
 		}
 	}
-	d.MACCallbacksMap[mac] = append(cs, cb)
+	d.MACCallbacksMap[mac] = append(cbs, callback)
 }
 
-func (d *Dashen) Unsubscribe(mac string, cb Callback) {
-	cs, ok := d.MACCallbacksMap[mac]
+func (d *Dashen) Unsubscribe(mac string, callback Callback) {
+	cbs, ok := d.MACCallbacksMap[mac]
 	if !ok {
 		return
 	}
-	cbs := []Callback{}
-	for _, c := range cs {
-		if &c == &cb {
+	callbacks := []Callback{}
+	ptr := reflect.ValueOf(callback).Pointer()
+	for _, cb := range cbs {
+		if reflect.ValueOf(cb).Pointer() == ptr {
 			continue
 		}
-		cbs = append(cbs, c)
+		callbacks = append(callbacks, cb)
 	}
-	d.MACCallbacksMap[mac] = cbs
+	d.MACCallbacksMap[mac] = callbacks
 }
 
 func (d *Dashen) Println(v ...interface{}) {
