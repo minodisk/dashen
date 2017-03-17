@@ -1,2 +1,3 @@
-# dashen
-Detect that the Amazon Dash Button is pressed in the intranet
+# dashen [![Codeship Status for minodisk/dashen](https://img.shields.io/codeship/8c4d91c0-ecf4-0134-e2b6-0a42fa094665/master.svg?style=flat)](https://app.codeship.com/projects/208467) [![Go Report Card](https://goreportcard.com/badge/github.com/minodisk/dashen)](https://goreportcard.com/report/github.com/minodisk/dashen) [![Coverage Status](https://img.shields.io/coveralls/minodisk/dashen/master.svg?style=flat)](https://coveralls.io/github/minodisk/dashen?branch=master) [![GoDoc](https://img.shields.io/badge/godoc-reference-5272B4.svg?style=flat)](https://godoc.org/github.com/minodisk/dashen) [![MIT License](http://img.shields.io/badge/license-MIT-blue.svg?style=flat)](LICENSE)
+
+Detect that the Amazon Dash Button is pressed in the intranet.
