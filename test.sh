@@ -10,3 +10,6 @@ for d in $(go list ./... | grep -v vendor); do
         rm profile.out
     fi
 done
+
+curl -o upload.sh https://codecov.io/bash
+bash ./upload.sh
