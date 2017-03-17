@@ -1,4 +1,4 @@
-FROM golang:1.7.5-wheezy
+FROM golang:1.7.5
 WORKDIR /go/src/github.com/minodisk/dashen
 
 RUN apt-get -y update && \
