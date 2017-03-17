@@ -110,8 +110,6 @@ func (d *Dashen) open(iface pcap.Interface, errCh chan error) error {
 			}
 		}
 	}
-
-	return nil
 }
 
 func (d *Dashen) Close() error {
