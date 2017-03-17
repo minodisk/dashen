@@ -9,6 +9,10 @@ import (
 	"github.com/pkg/errors"
 )
 
+var (
+	AlreadyListening = errors.New("already listening")
+)
+
 type Dashen struct {
 	Logger          Logger
 	MACCallbacksMap MACCallbacksMap
@@ -29,7 +33,7 @@ func (d *Dashen) Listen() error {
 	d.mutex.Lock()
 	if d.listening {
 		d.mutex.Unlock()
-		return errors.New("already listening")
+		return AlreadyListening
 	}
 	d.listening = true
 	d.mutex.Unlock()

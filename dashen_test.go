@@ -7,6 +7,34 @@ import (
 	"github.com/minodisk/dashen"
 )
 
+func TestListen(t *testing.T) {
+	d := dashen.New()
+
+	errCh1 := make(chan error, 1)
+	go func(d *dashen.Dashen) {
+		if err := d.Listen(); err != nil {
+			errCh1 <- err
+		}
+	}(d)
+
+	errCh2 := make(chan error, 1)
+	go func(d *dashen.Dashen) {
+		time.Sleep(time.Second)
+		if err := d.Listen(); err != nil {
+			errCh2 <- err
+		}
+	}(d)
+
+	select {
+	case err := <-errCh1:
+		t.Fatal("1st time Listen shouldn't return error:", err)
+	case err := <-errCh2:
+		if err != dashen.AlreadyListening {
+			t.Errorf("got %v, want %v", err, dashen.AlreadyListening)
+		}
+	}
+}
+
 func TestClose(t *testing.T) {
 	t.Run("close unlistening", func(t *testing.T) {
 		d := dashen.New()
