@@ -7,7 +7,7 @@ import (
 	"github.com/google/gopacket/pcap"
 )
 
-func validate(iface pcap.Interface) error {
+func Validate(iface pcap.Interface) error {
 	as := iface.Addresses
 	if strings.Contains(iface.Name, "docker") {
 		return errors.New("docker")
@@ -25,6 +25,7 @@ func validate(iface pcap.Interface) error {
 			continue
 		}
 		ok = true
+		break
 	}
 	if !ok {
 		return errors.New("bad address")

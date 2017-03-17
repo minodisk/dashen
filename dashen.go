@@ -58,7 +58,7 @@ func (d *Dashen) Listen() error {
 			defer func() {
 				wg.Done()
 			}()
-			if err := validate(iface); err != nil {
+			if err := Validate(iface); err != nil {
 				errCh <- errors.Wrap(err, "skip to open interface")
 				return
 			}
