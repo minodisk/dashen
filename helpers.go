@@ -1,34 +1,54 @@
 package dashen
 
 import (
-	"errors"
+	"fmt"
+	"reflect"
 	"strings"
 
 	"github.com/google/gopacket/pcap"
 )
 
-func Validate(iface pcap.Interface) error {
-	as := iface.Addresses
+type Skip struct {
+	Reason string
+}
+
+func (err Skip) Error() string {
+	return fmt.Sprintf("skip because %s", err.Reason)
+}
+
+func Filter(iface pcap.Interface) error {
 	if strings.Contains(iface.Name, "docker") {
-		return errors.New("docker")
+		return &Skip{"docker"}
 	}
 	if strings.HasPrefix(iface.Name, "br-") {
-		return errors.New("bridge")
+		return &Skip{"bridge"}
+	}
+	if strings.HasPrefix(iface.Name, "usb") {
+		return &Skip{"usb"}
+	}
+	if strings.HasPrefix(iface.Name, "bluetooth") {
+		return &Skip{"bluetooth"}
 	}
 
+	as := iface.Addresses
 	ok := false
 	for _, a := range as {
-		if a.IP[0] == 127 {
+		ip4 := a.IP.To4()
+		if ip4 == nil {
 			continue
 		}
-		if a.Netmask[0] != 0xff || a.Netmask[1] != 0xff {
+		if ip4[0] == 127 {
 			continue
 		}
 		ok = true
 		break
 	}
 	if !ok {
-		return errors.New("bad address")
+		return &Skip{"bad addresses"}
 	}
 	return nil
+}
+
+func IsEquals(i1, i2 interface{}) bool {
+	return reflect.ValueOf(i1).Pointer() == reflect.ValueOf(i2).Pointer()
 }

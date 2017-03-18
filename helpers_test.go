@@ -93,7 +93,7 @@ func TestValidate(t *testing.T) {
 		},
 	} {
 		t.Run(c.iface.Name, func(t *testing.T) {
-			err := dashen.Validate(c.iface)
+			err := dashen.Filter(c.iface)
 			if !reflect.DeepEqual(err, c.err) {
 				t.Errorf("got %v, want %v", err, c.err)
 			}

@@ -1,6 +1,8 @@
 package dashen
 
 import (
+	"fmt"
+	"io"
 	"reflect"
 	"sync"
 
@@ -12,10 +14,13 @@ import (
 
 var (
 	AlreadyListening = errors.New("already listening")
+	NotListening     = errors.New("not listening")
+	NoWriter         = errors.New("no writer")
 )
 
 type Dashen struct {
-	Logger          Logger
+	Logger          io.Writer
+	VerboseLogger   io.Writer
 	MACCallbacksMap MACCallbacksMap
 	doneCh          chan struct{}
 	mutex           *sync.Mutex
@@ -51,7 +56,7 @@ func (d *Dashen) Listen() error {
 			case <-d.doneCh:
 				return
 			case err := <-errCh:
-				d.Println(err)
+				d.Log(err)
 			}
 		}
 	}(errCh)
@@ -63,11 +68,11 @@ func (d *Dashen) Listen() error {
 			defer func() {
 				wg.Done()
 			}()
-			if err := Validate(iface); err != nil {
+			if err := Filter(iface); err != nil {
 				errCh <- errors.Wrap(err, "skip to open interface")
 				return
 			}
-			if err := d.open(iface, errCh); err != nil {
+			if err := d.listen(iface, errCh); err != nil {
 				errCh <- errors.Wrap(err, "fail to open interface with error")
 				return
 			}
@@ -78,9 +83,9 @@ func (d *Dashen) Listen() error {
 	return nil
 }
 
-func (d *Dashen) open(iface pcap.Interface, errCh chan error) error {
-	d.Println("open interface:", iface.Name)
-	handle, err := pcap.OpenLive(iface.Name, 1024, true, pcap.BlockForever)
+func (d *Dashen) listen(iface pcap.Interface, errCh chan error) error {
+	d.Log("open interface:", iface.Name)
+	handle, err := pcap.OpenLive(iface.Name, 10240, true, pcap.BlockForever)
 	if err != nil {
 		return err
 	}
@@ -88,7 +93,7 @@ func (d *Dashen) open(iface pcap.Interface, errCh chan error) error {
 	// https://github.com/google/gopacket/issues/253
 	// defer handle.Close()
 
-	d.Println("listen:", handle.LinkType().String(), iface.Name)
+	d.Log("capture packets:", handle.LinkType().String(), iface.Name)
 	src := gopacket.NewPacketSource(handle, handle.LinkType())
 	in := src.Packets()
 	for {
@@ -96,17 +101,28 @@ func (d *Dashen) open(iface pcap.Interface, errCh chan error) error {
 		case <-d.doneCh:
 			return nil
 		case packets := <-in:
-			layer := packets.Layer(layers.LayerTypeEthernet)
-			if layer == nil {
+			// when the type of Layer 2 is LLC,
+			// it may be the first packets from the Dash Button
+			llcl := packets.Layer(layers.LayerTypeLLC)
+			if llcl == nil {
 				continue
 			}
-			ethernet, ok := layer.(*layers.Ethernet)
+			if _, ok := llcl.(*layers.LLC); !ok {
+				continue
+			}
+			// get MAC addr
+			ethernetl := packets.Layer(layers.LayerTypeEthernet)
+			if ethernetl == nil {
+				continue
+			}
+			ethernet, ok := ethernetl.(*layers.Ethernet)
 			if !ok {
 				continue
 			}
-			srcMac := ethernet.SrcMAC.String()
+			srcMAC := ethernet.SrcMAC.String()
+			// scan callback map
 			for mac, cbs := range d.MACCallbacksMap {
-				if srcMac != mac {
+				if mac != srcMAC {
 					continue
 				}
 				for _, cb := range cbs {
@@ -122,7 +138,7 @@ func (d *Dashen) Close() error {
 	defer d.mutex.Unlock()
 
 	if !d.listening {
-		return errors.New("not listening")
+		return NotListening
 	}
 	close(d.doneCh)
 	d.listening = false
@@ -150,9 +166,8 @@ func (d *Dashen) Unsubscribe(mac string, callback Callback) {
 		return
 	}
 	callbacks := []Callback{}
-	ptr := reflect.ValueOf(callback).Pointer()
 	for _, cb := range cbs {
-		if reflect.ValueOf(cb).Pointer() == ptr {
+		if IsEquals(cb, callback) {
 			continue
 		}
 		callbacks = append(callbacks, cb)
@@ -160,9 +175,16 @@ func (d *Dashen) Unsubscribe(mac string, callback Callback) {
 	d.MACCallbacksMap[mac] = callbacks
 }
 
-func (d *Dashen) Println(v ...interface{}) {
+func (d *Dashen) Log(v ...interface{}) (int, error) {
 	if d.Logger == nil {
-		return
+		return 0, NoWriter
 	}
-	d.Logger.Println(v...)
+	return fmt.Fprintln(d.Logger, v...)
+}
+
+func (d *Dashen) LogVerbose(v ...interface{}) (int, error) {
+	if d.VerboseLogger == nil {
+		return 0, NoWriter
+	}
+	return fmt.Fprintln(d.VerboseLogger, v...)
 }
