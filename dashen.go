@@ -20,7 +20,7 @@ var (
 
 type Dashen struct {
 	Logger          io.Writer
-	VerboseLogger   io.Writer
+	LoggerVerbose   io.Writer
 	MACCallbacksMap MACCallbacksMap
 	doneCh          chan struct{}
 	mutex           *sync.Mutex
@@ -120,6 +120,7 @@ func (d *Dashen) listen(iface pcap.Interface, errCh chan error) error {
 				continue
 			}
 			srcMAC := ethernet.SrcMAC.String()
+			d.LogVerbose("detect:", srcMAC)
 			// scan callback map
 			for mac, cbs := range d.MACCallbacksMap {
 				if mac != srcMAC {
@@ -183,8 +184,8 @@ func (d *Dashen) Log(v ...interface{}) (int, error) {
 }
 
 func (d *Dashen) LogVerbose(v ...interface{}) (int, error) {
-	if d.VerboseLogger == nil {
+	if d.LoggerVerbose == nil {
 		return 0, NoWriter
 	}
-	return fmt.Fprintln(d.VerboseLogger, v...)
+	return fmt.Fprintln(d.LoggerVerbose, v...)
 }
