@@ -1,7 +1,6 @@
 package dashen_test
 
 import (
-	"errors"
 	"net"
 	"reflect"
 	"testing"
@@ -19,73 +18,37 @@ func TestValidate(t *testing.T) {
 			pcap.Interface{
 				Name: "docker",
 			},
-			errors.New("docker"),
+			&dashen.Skip{"docker"},
 		},
 		{
 			pcap.Interface{
 				Name: "br-XXXXXX",
 			},
-			errors.New("bridge"),
+			&dashen.Skip{"bridge"},
 		},
 		{
 			pcap.Interface{
 				Name: "good-name",
 			},
-			errors.New("bad address"),
+			&dashen.Skip{"bad address"},
 		},
 		{
 			pcap.Interface{
 				Name: "good-name",
 				Addresses: []pcap.InterfaceAddress{
 					{
-						IP: net.IP{127},
+						IP: net.IPv4(127, 0, 0, 1),
 					},
 				},
 			},
-			errors.New("bad address"),
+			&dashen.Skip{"bad address"},
 		},
 		{
 			pcap.Interface{
 				Name: "good-name",
 				Addresses: []pcap.InterfaceAddress{
 					{
-						IP:      net.IP{192},
-						Netmask: net.IPMask{0x00, 0x00},
-					},
-				},
-			},
-			errors.New("bad address"),
-		},
-		{
-			pcap.Interface{
-				Name: "good-name",
-				Addresses: []pcap.InterfaceAddress{
-					{
-						IP:      net.IP{192},
-						Netmask: net.IPMask{0xff, 0x00},
-					},
-				},
-			},
-			errors.New("bad address"),
-		},
-		{pcap.Interface{
-			Name: "good-name",
-			Addresses: []pcap.InterfaceAddress{
-				{
-					IP:      net.IP{192},
-					Netmask: net.IPMask{0x00, 0xff},
-				},
-			},
-		},
-			errors.New("bad address"),
-		},
-		{
-			pcap.Interface{
-				Name: "good-name",
-				Addresses: []pcap.InterfaceAddress{
-					{
-						IP:      net.IP{192},
-						Netmask: net.IPMask{0xff, 0xff},
+						IP: net.IPv4(10, 0, 0, 1),
 					},
 				},
 			},

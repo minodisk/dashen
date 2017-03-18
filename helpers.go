@@ -44,7 +44,7 @@ func Filter(iface pcap.Interface) error {
 		break
 	}
 	if !ok {
-		return &Skip{"bad addresses"}
+		return &Skip{"bad address"}
 	}
 	return nil
 }
